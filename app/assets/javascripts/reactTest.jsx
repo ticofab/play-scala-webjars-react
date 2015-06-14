@@ -1,16 +1,29 @@
-// without the id, we would get a warning like this:
-// Warning: Each child in an array or iterator should have a unique "key" prop. Check the render method of CommentList. See https://fb.me/react-warning-keys for more information.
-var data = [
-  {id: "1234", author: "Pete Hunt", text: "This is one comment"},
-  {id: "5678", author: "Jordan Walke", text: "This is *another* comment"}
-];
-
 var CommentBox = React.createClass({
+  loadCommentsFromServer: function() {
+    $.ajax({
+      url: this.props.url,
+      dataType: 'json',
+      cache: false,
+      success: function(data) {
+        this.setState({data: data});
+      }.bind(this),
+      error: function(xhr, status, err) {
+        console.error(this.props.url, status, err.toString());
+      }.bind(this)
+    });
+  },
+  getInitialState: function() {
+    return {data: []};
+  },
+  componentDidMount: function() {
+    this.loadCommentsFromServer();
+    setInterval(this.loadCommentsFromServer, this.props.pollInterval);
+  },
   render: function() {
     return (
       <div className="commentBox">
         <h1>Comments</h1>
-        <CommentList data={this.props.data} />
+        <CommentList data={this.state.data} />
         <CommentForm />
       </div>
     );
@@ -36,11 +49,40 @@ var CommentList = React.createClass({
 });
 
 var CommentForm = React.createClass({
+  handleSubmit: function(e) {
+    e.preventDefault();
+    var author = React.findDOMNode(this.refs.author).value.trim();
+    var text = React.findDOMNode(this.refs.text).value.trim();
+    if (!text || !author) {
+      return;
+    }
+
+    var commentUrl = "http://localhost:9000/comment?author=" + author + "&text=" + text;
+    $.ajax({
+          url: commentUrl,
+          method: 'POST',
+          dataType: 'json',
+          cache: false,
+          success: function(data) {
+            console.log(data)
+          }.bind(this),
+          error: function(xhr, status, err) {
+            console.error(commentUrl, status, err.toString());
+          }.bind(this)
+        });
+
+    // clears the form fields
+    React.findDOMNode(this.refs.author).value = '';
+    React.findDOMNode(this.refs.text).value = '';
+    return;
+  },
   render: function() {
     return (
-      <div className="commentForm">
-        Hello, world! I am a CommentForm.
-      </div>
+      <form className="commentForm" onSubmit={this.handleSubmit}>
+        <input type="text" placeholder="Your name" ref="author" />
+        <input type="text" placeholder="Say something..." ref="text" />
+        <input type="submit" value="Post" />
+      </form>
     );
   }
 });
@@ -61,5 +103,5 @@ var Comment = React.createClass({
 });
 
 React.render(
-  <CommentBox data={data} />,
+  <CommentBox url="http://localhost:9000/comments" pollInterval={2000} />,
   document.getElementById('content'));
