@@ -11,7 +11,7 @@ libraryDependencies ++= Seq(
   ws,
   specs2 % Test,
   "org.webjars" %% "webjars-play" % "2.4.0-1",
-  "org.webjars" % "react" % "0.13.3",
+  "org.webjars" % "react" % "0.14.0",
   "org.webjars" % "marked" % "0.3.2",
   "org.webjars" % "jquery" % "2.1.4"
 )
